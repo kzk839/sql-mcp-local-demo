@@ -1,0 +1,63 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v2.0.1-rc/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('MSSQL_CONNECTION_STRING')"
+  },
+  "runtime": {
+    "rest": { "enabled": true },
+    "graphql": { "enabled": true },
+    "mcp": { "enabled": true },
+    "host": {
+      "mode": "development",
+      "cors": { "origins": ["*"] }
+    }
+  },
+  "entities": {
+    "Categories": {
+      "source": { "object": "dbo.Categories", "type": "table" },
+      "description": "Product categories. Name values: Electronics, Furniture, Appliances, Office Supplies, Clothing.",
+      "permissions": [{ "role": "anonymous", "actions": ["read"] }],
+      "relationships": {
+        "Products": {
+          "target.entity": "Products",
+          "cardinality": "many",
+          "source.fields": ["Id"],
+          "target.fields": ["CategoryId"]
+        }
+      }
+    },
+    "Products": {
+      "source": { "object": "dbo.Products", "type": "table" },
+      "description": "Office products. Fields: Id(PK), Name, CategoryId(FK), Inventory(units in stock, 0=out of stock), Price(JPY), Cost(JPY), IsDiscontinued(1=discontinued), AddedDate(YYYY-MM-DD).",
+      "permissions": [{ "role": "anonymous", "actions": ["read"] }],
+      "relationships": {
+        "Category": {
+          "target.entity": "Categories",
+          "cardinality": "one",
+          "source.fields": ["CategoryId"],
+          "target.fields": ["Id"]
+        },
+        "Reviews": {
+          "target.entity": "Reviews",
+          "cardinality": "many",
+          "source.fields": ["Id"],
+          "target.fields": ["ProductId"]
+        }
+      }
+    },
+    "Reviews": {
+      "source": { "object": "dbo.Reviews", "type": "table" },
+      "description": "Customer reviews. Fields: Id(PK), ProductId(FK), Rating(1-5), Comment(nullable), ReviewDate(YYYY-MM-DD).",
+      "permissions": [{ "role": "anonymous", "actions": ["read"] }],
+      "relationships": {
+        "Product": {
+          "target.entity": "Products",
+          "cardinality": "one",
+          "source.fields": ["ProductId"],
+          "target.fields": ["Id"]
+        }
+      }
+    }
+  }
+}

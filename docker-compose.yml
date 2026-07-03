@@ -1,0 +1,39 @@
+services:
+
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD}"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "127.0.0.1:1433:1433"   # localhost からのみアクセス可能
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$SA_PASSWORD -Q 'SELECT 1' -b -No"]
+      interval: 10s
+      retries: 10
+      timeout: 5s
+
+  sql-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sql:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: "${SA_PASSWORD}"
+    volumes:
+      - ./init.sql:/init.sql:ro
+    command: bash -c "/opt/mssql-tools18/bin/sqlcmd -S sql -U sa -P $$SA_PASSWORD -i /init.sql -No"
+    restart: "no"
+
+  mcp:
+    image: mcr.microsoft.com/azure-databases/data-api-builder:2.0.1-rc
+    depends_on:
+      sql:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5000:5000"   # localhost からのみアクセス可能
+    volumes:
+      - ./dab-config.json:/App/dab-config.json:ro
+    environment:
+      MSSQL_CONNECTION_STRING: "Server=sql;Database=ProductsDb;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
